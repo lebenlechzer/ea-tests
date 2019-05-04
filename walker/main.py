@@ -10,8 +10,6 @@ import pymunk
 import pymunk.vec2d
 import pymunk.pygame_util
 
-import math
-
 from body import Body
 
 FPS = 40

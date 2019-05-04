@@ -38,8 +38,6 @@ class Body(object):
         shape = pymunk.Poly.create_box(body, (leg_width, leg_length))
         vertices = shape.get_vertices()
         joint_position: pymunk.Vec2d = (vertices[1] + vertices[2]) / 2.
-        # rotation = pymunk.transform.Transform(math.cos(angle), -math.sin(angle), math.sin(angle), math.cos(angle))
-        # shape.unsafe_set_vertices(shape.get_vertices(), rotation)
         body.angle = -angle
         joint_position_ext = copy.copy(joint_position)
         joint_position_ext.rotate(angle)
