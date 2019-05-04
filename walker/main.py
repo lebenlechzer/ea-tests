@@ -5,14 +5,16 @@ import sys
 import pygame
 import pygame.locals
 import pymunk
+import pymunk.vec2d
 import pymunk.pygame_util
 
 from body import Body
 
 FPS = 40
 ITERATIONS_PER_FRAME = 10
-GRAVITY = (0., -98.1)
-SCREEN_SIZE = (400, 400)
+GRAVITY = (0., -1000)
+SCREEN_SIZE = (800, 400)
+MOVE_FORCE = pymunk.Vec2d(1e5, 0.)
 
 
 def main():
@@ -25,10 +27,11 @@ def main():
     space = pymunk.Space()
     space.gravity = GRAVITY
 
-    body = Body(200, 200, leg_mass=20., leg_width=3., leg_length=100., leg_angle=30)
-    space.add(*body.get_objects())
+    walker = Body(SCREEN_SIZE[0] / 2., SCREEN_SIZE[1] / 2., leg_mass=1., leg_width=3., leg_length=100., leg_angle=30)
+    space.add(*walker.get_objects())
 
     space.add(create_floor())
+    space.add(create_walls())
 
     dt = 1. / FPS / ITERATIONS_PER_FRAME
     running = True
@@ -40,6 +43,15 @@ def main():
                     (event.type == pygame.locals.KEYDOWN and
                      event.key == pygame.locals.K_ESCAPE):
                 running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_j:
+                walker.leg1.body.apply_force_at_local_point(MOVE_FORCE, -walker.joint_pos_l1)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_k:
+                walker.leg1.body.apply_force_at_local_point(-MOVE_FORCE, -walker.joint_pos_l1)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
+                walker.leg2.body.apply_force_at_local_point(MOVE_FORCE, -walker.joint_pos_l2)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                walker.leg2.body.apply_force_at_local_point(-MOVE_FORCE, -walker.joint_pos_l2)
+
         screen.fill(pygame.color.THECOLORS['white'])
         space.debug_draw(draw_options)
         for _ in range(ITERATIONS_PER_FRAME):
@@ -54,6 +66,21 @@ def create_floor():
     floor = pymunk.Segment(body, (-SCREEN_SIZE[0] / 2., 0), (SCREEN_SIZE[0] / 2., 0), SCREEN_SIZE[1] / 100.)
     floor.friction = 0.62
     return floor
+
+
+def create_walls():
+    def create_wall(pos, from_pos, to_pos, width):
+        wall_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+        wall_body.position = pos
+        wall = pymunk.Segment(wall_body, from_pos, to_pos, width)
+        wall.friction = 0.62
+        return wall
+
+    left_wall = create_wall(pos=(0., SCREEN_SIZE[1] / 2.), from_pos=(0., -SCREEN_SIZE[1] / 2.),
+                            to_pos=(0., SCREEN_SIZE[1] / 2.), width=SCREEN_SIZE[1] / 100.)
+    right_wall = create_wall(pos=(SCREEN_SIZE[0], SCREEN_SIZE[1] / 2.), from_pos=(0., -SCREEN_SIZE[1] / 2.),
+                             to_pos=(0., SCREEN_SIZE[1] / 2.), width=SCREEN_SIZE[1] / 100.)
+    return left_wall, right_wall
 
 
 if __name__ == "__main__":
