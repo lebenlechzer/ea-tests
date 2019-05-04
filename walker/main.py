@@ -2,19 +2,24 @@
 # vim: set fileencoding=utf8 :
 
 import sys
+import copy
+
 import pygame
 import pygame.locals
 import pymunk
 import pymunk.vec2d
 import pymunk.pygame_util
 
+import math
+
 from body import Body
 
 FPS = 40
 ITERATIONS_PER_FRAME = 10
 GRAVITY = (0., -1000)
-SCREEN_SIZE = (800, 400)
-MOVE_FORCE = pymunk.Vec2d(1e5, 0.)
+SCREEN_SIZE = (1000, 400)
+MOVE_FORCE_SIDE = pymunk.Vec2d(1e5, 0.)
+MOVE_FORCE_UP = pymunk.Vec2d(0., 2e5)
 
 
 def main():
@@ -44,13 +49,17 @@ def main():
                      event.key == pygame.locals.K_ESCAPE):
                 running = False
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_j:
-                walker.leg1.body.apply_force_at_local_point(MOVE_FORCE, -walker.joint_pos_l1)
+                walker.leg1.body.apply_force_at_local_point(MOVE_FORCE_SIDE, -walker.joint_pos_l1)
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_k:
-                walker.leg1.body.apply_force_at_local_point(-MOVE_FORCE, -walker.joint_pos_l1)
+                walker.leg1.body.apply_force_at_local_point(-MOVE_FORCE_SIDE, -walker.joint_pos_l1)
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
-                walker.leg2.body.apply_force_at_local_point(MOVE_FORCE, -walker.joint_pos_l2)
+                walker.leg2.body.apply_force_at_local_point(MOVE_FORCE_SIDE, -walker.joint_pos_l2)
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
-                walker.leg2.body.apply_force_at_local_point(-MOVE_FORCE, -walker.joint_pos_l2)
+                walker.leg2.body.apply_force_at_local_point(-MOVE_FORCE_SIDE, -walker.joint_pos_l2)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                local_force = copy.copy(MOVE_FORCE_UP)
+                local_force.rotate(-walker.leg1.body.angle)
+                walker.leg1.body.apply_force_at_local_point(local_force, walker.joint_pos_l1)
 
         screen.fill(pygame.color.THECOLORS['white'])
         space.debug_draw(draw_options)
