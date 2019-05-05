@@ -30,11 +30,13 @@ def main():
     space = pymunk.Space()
     space.gravity = GRAVITY
 
-    walker = Body(SCREEN_SIZE[0] / 2., SCREEN_SIZE[1] / 2., leg_mass=1., leg_width=3., leg_length=100., leg_angle=30)
-    space.add(*walker.get_objects())
-
-    space.add(create_floor())
+    floor = create_floor()
+    space.add(floor)
     space.add(create_walls())
+
+    walker = Body(floor.body.position.x / 8., floor.body.position.y,
+                  leg_mass=1., leg_width=3., leg_length=100., init_leg_angle=30)
+    walker.add_to_space(space)
 
     dt = 1. / FPS / ITERATIONS_PER_FRAME
     running = True

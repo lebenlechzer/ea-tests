@@ -2,45 +2,43 @@
 # vim: set fileencoding=utf8 :
 
 import math
-import copy
 
 import pymunk
 
 
 class Body(object):
-    def __init__(self, x, y, leg_mass=5., leg_width=2., leg_length=40., leg_angle=30):
+    def __init__(self, x, y, leg_mass=5., leg_width=2., leg_length=40., leg_friction=.4, init_leg_angle=30):
         self.leg_length = leg_length
         self.leg_mass = leg_mass
         self.leg_width = leg_width
-        self.leg_angle = leg_angle
+        self.leg_friction = leg_friction
 
-        self.leg1, self.joint_pos_l1, joint_pos_l1_ext = self.create_leg(self.leg_mass, self.leg_length, self.leg_width,
-                                                                         math.radians(-self.leg_angle))
-        self.leg2, self.joint_pos_l2, joint_pos_l2_ext = self.create_leg(self.leg_mass, self.leg_length, self.leg_width,
-                                                                         math.radians(self.leg_angle))
+        self.leg1, self.joint_pos_l1 = self.create_leg(self.leg_mass, self.leg_length, self.leg_width,
+                                                       math.radians(-init_leg_angle), leg_friction)
+        self.leg2, self.joint_pos_l2 = self.create_leg(self.leg_mass, self.leg_length, self.leg_width,
+                                                       math.radians(init_leg_angle), leg_friction)
 
-        self.place_legs(x, y, joint_pos_l1_ext, joint_pos_l2_ext)
+        self.place_leg(self.leg1, x, y, math.radians(-init_leg_angle))
+        self.place_leg(self.leg2, x, y, math.radians(init_leg_angle))
 
         self.rotation_center_legs_joint = pymunk.PinJoint(self.leg1.body, self.leg2.body,
                                                           self.joint_pos_l2, self.joint_pos_l1)
         self.rotation_center_legs_joint.collide_bodies = False
 
-    def get_objects(self):
-        return self.leg1, self.leg2, self.leg1.body, self.leg2.body, self.rotation_center_legs_joint
+    def add_to_space(self, space: pymunk.Space):
+        space.add(self.leg1, self.leg2, self.leg1.body, self.leg2.body, self.rotation_center_legs_joint)
 
-    def place_legs(self, x, y, offset_1, offset_2):
-        self.leg1.body.position = (x + offset_1.x, y + offset_1.y)
-        self.leg2.body.position = (x + offset_2.x, y + offset_2.y)
+    def place_leg(self, leg, x, y, angle):
+        leg.body.position = (x - self.leg_length * math.sin(angle) / 2.,
+                             y + self.leg_length * math.cos(angle) / 2.)
 
     @staticmethod
-    def create_leg(leg_mass, leg_length, leg_width, angle):
-        body = pymunk.Body(leg_mass, pymunk.moment_for_box(leg_mass, (leg_width, leg_length)))
-        shape = pymunk.Poly.create_box(body, (leg_width, leg_length))
+    def create_leg(mass, length, width, angle, friction):
+        body = pymunk.Body(mass, pymunk.moment_for_box(mass, (width, length)))
+        shape = pymunk.Poly.create_box(body, (width, length))
         vertices = shape.get_vertices()
         joint_position: pymunk.Vec2d = (vertices[1] + vertices[2]) / 2.
         body.angle = -angle
-        joint_position_ext = copy.copy(joint_position)
-        joint_position_ext.rotate(angle)
-        shape.friction = .4
+        shape.friction = friction
 
-        return shape, joint_position, joint_position_ext
+        return shape, joint_position
