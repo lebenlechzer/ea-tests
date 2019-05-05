@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # vim: set fileencoding=utf8 :
-
+import math
 import sys
 import copy
 
@@ -34,8 +34,7 @@ def main():
     space.add(floor)
     space.add(create_walls())
 
-    walker = Body(floor.body.position.x / 8., floor.body.position.y,
-                  leg_mass=1., leg_width=3., leg_length=100., init_leg_angle=30)
+    walker = Body(floor, leg_mass=1., leg_width=3., leg_length=100., init_leg_angle=30)
     walker.add_to_space(space)
 
     dt = 1. / FPS / ITERATIONS_PER_FRAME
@@ -48,14 +47,45 @@ def main():
                     (event.type == pygame.locals.KEYDOWN and
                      event.key == pygame.locals.K_ESCAPE):
                 running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_j:
-                walker.leg1.body.apply_force_at_local_point(MOVE_FORCE_SIDE, -walker.joint_pos_l1)
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_k:
-                walker.leg1.body.apply_force_at_local_point(-MOVE_FORCE_SIDE, -walker.joint_pos_l1)
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
-                walker.leg2.body.apply_force_at_local_point(MOVE_FORCE_SIDE, -walker.joint_pos_l2)
+                walker.leg1.body.apply_force_at_local_point(MOVE_FORCE_SIDE, -walker.joint_pos_l1)
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_s:
+                walker.leg1.body.apply_force_at_local_point(-MOVE_FORCE_SIDE, -walker.joint_pos_l1)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_j:
+                walker.leg2.body.apply_force_at_local_point(MOVE_FORCE_SIDE, -walker.joint_pos_l2)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_k:
                 walker.leg2.body.apply_force_at_local_point(-MOVE_FORCE_SIDE, -walker.joint_pos_l2)
+
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_x:
+                walker.leg1_floor_motor.rate = 1.
+                if walker.leg1_floor_motor not in space.constraints:
+                    space.add(walker.leg1_floor_motor)
+            elif event.type == pygame.KEYUP and event.key == pygame.K_x:
+                if walker.leg1_floor_motor in space.constraints:
+                    space.remove(walker.leg1_floor_motor)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_c:
+                walker.leg1_floor_motor.rate = -1.
+                if walker.leg1_floor_motor not in space.constraints:
+                    space.add(walker.leg1_floor_motor)
+            elif event.type == pygame.KEYUP and event.key == pygame.K_c:
+                if walker.leg1_floor_motor in space.constraints:
+                    space.remove(walker.leg1_floor_motor)
+
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_n:
+                walker.leg2_floor_motor.rate = 1.
+                if walker.leg2_floor_motor not in space.constraints:
+                    space.add(walker.leg2_floor_motor)
+            elif event.type == pygame.KEYUP and event.key == pygame.K_n:
+                if walker.leg2_floor_motor in space.constraints:
+                    space.remove(walker.leg2_floor_motor)
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_m:
+                walker.leg2_floor_motor.rate = -1.
+                if walker.leg2_floor_motor not in space.constraints:
+                    space.add(walker.leg2_floor_motor)
+            elif event.type == pygame.KEYUP and event.key == pygame.K_m:
+                if walker.leg2_floor_motor in space.constraints:
+                    space.remove(walker.leg2_floor_motor)
+
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 local_force = copy.copy(MOVE_FORCE_UP)
                 local_force.rotate(-walker.leg1.body.angle)
@@ -69,20 +99,20 @@ def main():
         clock.tick(FPS)
 
 
-def create_floor():
+def create_floor(friction=0.62):
     body = pymunk.Body(body_type=pymunk.Body.STATIC)
     body.position = (SCREEN_SIZE[0] / 2, SCREEN_SIZE[1] / 4)
     floor = pymunk.Segment(body, (-SCREEN_SIZE[0] / 2., 0), (SCREEN_SIZE[0] / 2., 0), SCREEN_SIZE[1] / 100.)
-    floor.friction = 0.62
+    floor.friction = friction
     return floor
 
 
-def create_walls():
+def create_walls(friction=0.62):
     def create_wall(pos, from_pos, to_pos, width):
         wall_body = pymunk.Body(body_type=pymunk.Body.STATIC)
         wall_body.position = pos
         wall = pymunk.Segment(wall_body, from_pos, to_pos, width)
-        wall.friction = 0.62
+        wall.friction = friction
         return wall
 
     left_wall = create_wall(pos=(0., SCREEN_SIZE[1] / 2.), from_pos=(0., -SCREEN_SIZE[1] / 2.),
